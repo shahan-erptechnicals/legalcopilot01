@@ -217,7 +217,7 @@ Opposing Party: ${caseData.opposing_party || 'Opposing Party'}`,
     );
   }
 
-  const documentChecklist = caseType?.document_checklist || [];
+  const documentChecklist = (Array.isArray(caseType?.document_checklist) ? caseType.document_checklist : []) as string[];
 
   return (
     <DashboardLayout>
