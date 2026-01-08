@@ -179,7 +179,7 @@ export default function Documents() {
                 {selectedDoc?.document_name}
               </DialogTitle>
               <DialogDescription>
-                {selectedDoc?.case?.title || 'No case assigned'}
+                {(selectedDoc as CaseDocument & { case?: Case })?.case?.title || 'No case assigned'}
               </DialogDescription>
             </DialogHeader>
             {selectedDoc?.content && (
