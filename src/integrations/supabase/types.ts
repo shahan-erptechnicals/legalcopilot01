@@ -14,7 +14,395 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      case_documents: {
+        Row: {
+          case_id: string
+          content: string | null
+          created_at: string
+          document_name: string
+          document_type: string | null
+          file_path: string | null
+          id: string
+          is_generated: boolean | null
+          status: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          case_id: string
+          content?: string | null
+          created_at?: string
+          document_name: string
+          document_type?: string | null
+          file_path?: string | null
+          id?: string
+          is_generated?: boolean | null
+          status?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          case_id?: string
+          content?: string | null
+          created_at?: string
+          document_name?: string
+          document_type?: string | null
+          file_path?: string | null
+          id?: string
+          is_generated?: boolean | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_documents_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      case_reminders: {
+        Row: {
+          case_id: string
+          created_at: string
+          description: string | null
+          due_date: string
+          id: string
+          is_completed: boolean | null
+          reminder_type: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          description?: string | null
+          due_date: string
+          id?: string
+          is_completed?: boolean | null
+          reminder_type?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          description?: string | null
+          due_date?: string
+          id?: string
+          is_completed?: boolean | null
+          reminder_type?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_reminders_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      case_timeline: {
+        Row: {
+          case_id: string
+          created_at: string
+          description: string | null
+          event_date: string
+          event_type: string
+          id: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          description?: string | null
+          event_date?: string
+          event_type: string
+          id?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          description?: string | null
+          event_date?: string
+          event_type?: string
+          id?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_timeline_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      case_types: {
+        Row: {
+          created_at: string
+          description: string | null
+          document_checklist: Json | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          document_checklist?: Json | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          document_checklist?: Json | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      cases: {
+        Row: {
+          case_number: string | null
+          case_type_id: string | null
+          client_id: string | null
+          court_name: string | null
+          created_at: string
+          description: string | null
+          filed_date: string | null
+          id: string
+          next_hearing_date: string | null
+          opposing_counsel: string | null
+          opposing_party: string | null
+          priority: string | null
+          status: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          case_number?: string | null
+          case_type_id?: string | null
+          client_id?: string | null
+          court_name?: string | null
+          created_at?: string
+          description?: string | null
+          filed_date?: string | null
+          id?: string
+          next_hearing_date?: string | null
+          opposing_counsel?: string | null
+          opposing_party?: string | null
+          priority?: string | null
+          status?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          case_number?: string | null
+          case_type_id?: string | null
+          client_id?: string | null
+          court_name?: string | null
+          created_at?: string
+          description?: string | null
+          filed_date?: string | null
+          id?: string
+          next_hearing_date?: string | null
+          opposing_counsel?: string | null
+          opposing_party?: string | null
+          priority?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cases_case_type_id_fkey"
+            columns: ["case_type_id"]
+            isOneToOne: false
+            referencedRelation: "case_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cases_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clients: {
+        Row: {
+          address: string | null
+          created_at: string
+          date_of_birth: string | null
+          email: string | null
+          full_name: string
+          id: string
+          notes: string | null
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          email?: string | null
+          full_name: string
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          email?: string | null
+          full_name?: string
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      intake_conversations: {
+        Row: {
+          case_id: string | null
+          client_id: string | null
+          created_at: string
+          id: string
+          status: string | null
+          summary: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          case_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          status?: string | null
+          summary?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          case_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          status?: string | null
+          summary?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intake_conversations_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intake_conversations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      intake_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          role: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          role: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intake_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "intake_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          bar_number: string | null
+          created_at: string
+          email: string | null
+          firm_name: string | null
+          full_name: string | null
+          id: string
+          phone: string | null
+          subscription_tier: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bar_number?: string | null
+          created_at?: string
+          email?: string | null
+          firm_name?: string | null
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bar_number?: string | null
+          created_at?: string
+          email?: string | null
+          firm_name?: string | null
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
