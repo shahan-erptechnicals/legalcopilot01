@@ -19,10 +19,14 @@ import {
   CheckCircle,
   Sparkles,
   Loader2,
+  Upload,
+  Download,
 } from 'lucide-react';
 import { Case, CaseDocument, CaseReminder, CaseTimeline, CaseType } from '@/types/database';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import FileUpload from '@/components/FileUpload';
+import DocumentViewer from '@/components/DocumentViewer';
 
 export default function CaseDetail() {
   const { id } = useParams<{ id: string }>();
@@ -34,6 +38,9 @@ export default function CaseDetail() {
   const [timeline, setTimeline] = useState<CaseTimeline[]>([]);
   const [loading, setLoading] = useState(true);
   const [generatingDoc, setGeneratingDoc] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState<CaseDocument | null>(null);
+  const [showUpload, setShowUpload] = useState(false);
+  const [uploadDocName, setUploadDocName] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (id && user) {
@@ -332,7 +339,15 @@ Opposing Party: ${caseData.opposing_party || 'Opposing Party'}`,
                             </span>
                           </div>
                           {!uploaded && (
-                            <Button variant="outline" size="sm">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                setUploadDocName(doc);
+                                setShowUpload(true);
+                              }}
+                            >
+                              <Upload className="mr-2 h-4 w-4" />
                               Upload
                             </Button>
                           )}
@@ -376,30 +391,102 @@ Opposing Party: ${caseData.opposing_party || 'Opposing Party'}`,
               </CardContent>
             </Card>
 
-            {/* Generated Documents */}
-            {documents.filter((d) => d.is_generated).length > 0 && (
+            {/* File Upload Section */}
+            <Card className="shadow-legal">
+              <CardHeader>
+                <CardTitle className="font-display text-lg flex items-center gap-2">
+                  <Upload className="h-5 w-5 text-secondary" />
+                  Upload Document
+                </CardTitle>
+                <CardDescription>Upload files to this case</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <FileUpload
+                  caseId={caseData.id}
+                  userId={user!.id}
+                  documentName={uploadDocName}
+                  onUploadComplete={() => {
+                    setUploadDocName(undefined);
+                    setShowUpload(false);
+                    fetchCaseData();
+                  }}
+                />
+              </CardContent>
+            </Card>
+
+            {/* All Documents List */}
+            {documents.length > 0 && (
               <Card className="shadow-legal">
                 <CardHeader>
-                  <CardTitle className="font-display text-lg">Generated Documents</CardTitle>
+                  <CardTitle className="font-display text-lg">All Documents</CardTitle>
+                  <CardDescription>Generated and uploaded documents</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {documents
-                      .filter((d) => d.is_generated)
-                      .map((doc) => (
-                        <div key={doc.id} className="p-4 rounded-lg border">
-                          <div className="flex items-center justify-between mb-2">
-                            <h4 className="font-medium">{doc.document_name}</h4>
-                            <Badge variant="outline">AI Generated</Badge>
+                    {documents.map((doc) => (
+                      <div key={doc.id} className="p-4 rounded-lg border hover:border-secondary/50 transition-colors">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-medium flex items-center gap-2">
+                            {doc.is_generated ? (
+                              <Sparkles className="h-4 w-4 text-secondary" />
+                            ) : (
+                              <FileText className="h-4 w-4 text-muted-foreground" />
+                            )}
+                            {doc.document_name}
+                          </h4>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline">
+                              {doc.is_generated ? 'AI Generated' : 'Uploaded'}
+                            </Badge>
+                            <Badge variant="outline" className="capitalize">
+                              {doc.status}
+                            </Badge>
                           </div>
-                          <p className="text-sm text-muted-foreground whitespace-pre-wrap line-clamp-3">
+                        </div>
+                        {doc.content && (
+                          <p className="text-sm text-muted-foreground whitespace-pre-wrap line-clamp-2 mb-2">
                             {doc.content}
                           </p>
-                          <Button variant="link" className="mt-2 h-auto p-0 text-secondary">
+                        )}
+                        <div className="flex items-center gap-2 mt-3">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedDocument(doc)}
+                          >
                             View Full Document
                           </Button>
+                          {doc.file_path && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={async () => {
+                                const { data, error } = await supabase.storage
+                                  .from('case-files')
+                                  .download(doc.file_path!);
+                                if (error) {
+                                  toast.error('Failed to download');
+                                  return;
+                                }
+                                const url = URL.createObjectURL(data);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = doc.document_name;
+                                a.click();
+                                URL.revokeObjectURL(url);
+                                toast.success('Downloaded');
+                              }}
+                            >
+                              <Download className="mr-2 h-4 w-4" />
+                              Download
+                            </Button>
+                          )}
                         </div>
-                      ))}
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {format(new Date(doc.created_at), 'MMM d, yyyy h:mm a')}
+                        </p>
+                      </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
@@ -553,6 +640,14 @@ Opposing Party: ${caseData.opposing_party || 'Opposing Party'}`,
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Document Viewer Modal */}
+        <DocumentViewer
+          document={selectedDocument}
+          caseTitle={caseData.title}
+          open={!!selectedDocument}
+          onOpenChange={(open) => !open && setSelectedDocument(null)}
+        />
       </div>
     </DashboardLayout>
   );
