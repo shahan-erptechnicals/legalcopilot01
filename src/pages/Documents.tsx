@@ -2,21 +2,13 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { FileText, Search, Sparkles, Copy, Download } from 'lucide-react';
+import { FileText, Search, Sparkles } from 'lucide-react';
 import { CaseDocument, Case } from '@/types/database';
 import { format } from 'date-fns';
-import { toast } from 'sonner';
+import DocumentViewer from '@/components/DocumentViewer';
 
 export default function Documents() {
   const { user } = useAuth();
@@ -53,11 +45,6 @@ export default function Documents() {
       d.document_name.toLowerCase().includes(search.toLowerCase()) ||
       d.case?.title?.toLowerCase().includes(search.toLowerCase())
   );
-
-  const copyToClipboard = (content: string) => {
-    navigator.clipboard.writeText(content);
-    toast.success('Copied to clipboard');
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -168,45 +155,13 @@ export default function Documents() {
           </div>
         )}
 
-        {/* Document Preview Dialog */}
-        <Dialog open={!!selectedDoc} onOpenChange={() => setSelectedDoc(null)}>
-          <DialogContent className="max-w-3xl max-h-[80vh] overflow-auto">
-            <DialogHeader>
-              <DialogTitle className="font-display flex items-center gap-2">
-                {selectedDoc?.is_generated && (
-                  <Sparkles className="h-5 w-5 text-secondary" />
-                )}
-                {selectedDoc?.document_name}
-              </DialogTitle>
-              <DialogDescription>
-                {(selectedDoc as CaseDocument & { case?: Case })?.case?.title || 'No case assigned'}
-              </DialogDescription>
-            </DialogHeader>
-            {selectedDoc?.content && (
-              <div className="mt-4">
-                <div className="flex gap-2 mb-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => copyToClipboard(selectedDoc.content!)}
-                  >
-                    <Copy className="mr-2 h-4 w-4" />
-                    Copy
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <Download className="mr-2 h-4 w-4" />
-                    Download
-                  </Button>
-                </div>
-                <div className="p-4 bg-muted rounded-lg">
-                  <pre className="whitespace-pre-wrap text-sm font-body">
-                    {selectedDoc.content}
-                  </pre>
-                </div>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
+        {/* Document Viewer */}
+        <DocumentViewer
+          document={selectedDoc}
+          caseTitle={(selectedDoc as CaseDocument & { case?: Case })?.case?.title}
+          open={!!selectedDoc}
+          onOpenChange={(open) => !open && setSelectedDoc(null)}
+        />
       </div>
     </DashboardLayout>
   );
