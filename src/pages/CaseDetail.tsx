@@ -27,6 +27,8 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import FileUpload from '@/components/FileUpload';
 import DocumentViewer from '@/components/DocumentViewer';
+import DocumentUploadDialog from '@/components/DocumentUploadDialog';
+import AddReminderDialog from '@/components/AddReminderDialog';
 
 export default function CaseDetail() {
   const { id } = useParams<{ id: string }>();
@@ -39,8 +41,9 @@ export default function CaseDetail() {
   const [loading, setLoading] = useState(true);
   const [generatingDoc, setGeneratingDoc] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<CaseDocument | null>(null);
-  const [showUpload, setShowUpload] = useState(false);
-  const [uploadDocName, setUploadDocName] = useState<string | undefined>(undefined);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [uploadDocName, setUploadDocName] = useState<string>('');
+  const [reminderDialogOpen, setReminderDialogOpen] = useState(false);
 
   useEffect(() => {
     if (id && user) {
@@ -344,7 +347,7 @@ Opposing Party: ${caseData.opposing_party || 'Opposing Party'}`,
                               size="sm"
                               onClick={() => {
                                 setUploadDocName(doc);
-                                setShowUpload(true);
+                                setUploadDialogOpen(true);
                               }}
                             >
                               <Upload className="mr-2 h-4 w-4" />
@@ -404,10 +407,7 @@ Opposing Party: ${caseData.opposing_party || 'Opposing Party'}`,
                 <FileUpload
                   caseId={caseData.id}
                   userId={user!.id}
-                  documentName={uploadDocName}
                   onUploadComplete={() => {
-                    setUploadDocName(undefined);
-                    setShowUpload(false);
                     fetchCaseData();
                   }}
                 />
@@ -541,7 +541,10 @@ Opposing Party: ${caseData.opposing_party || 'Opposing Party'}`,
                   <CardTitle className="font-display text-lg">Reminders & Deadlines</CardTitle>
                   <CardDescription>Track important dates</CardDescription>
                 </div>
-                <Button className="gradient-gold text-primary">
+                <Button 
+                  className="gradient-gold text-primary"
+                  onClick={() => setReminderDialogOpen(true)}
+                >
                   <Plus className="mr-2 h-4 w-4" />
                   Add Reminder
                 </Button>
@@ -647,6 +650,25 @@ Opposing Party: ${caseData.opposing_party || 'Opposing Party'}`,
           caseTitle={caseData.title}
           open={!!selectedDocument}
           onOpenChange={(open) => !open && setSelectedDocument(null)}
+        />
+
+        {/* Document Upload Dialog */}
+        <DocumentUploadDialog
+          open={uploadDialogOpen}
+          onOpenChange={setUploadDialogOpen}
+          documentName={uploadDocName}
+          caseId={caseData.id}
+          userId={user!.id}
+          onUploadComplete={fetchCaseData}
+        />
+
+        {/* Add Reminder Dialog */}
+        <AddReminderDialog
+          open={reminderDialogOpen}
+          onOpenChange={setReminderDialogOpen}
+          caseId={caseData.id}
+          userId={user!.id}
+          onReminderAdded={fetchCaseData}
         />
       </div>
     </DashboardLayout>

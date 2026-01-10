@@ -1,42 +1,136 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Scale, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Scale, ArrowLeft, ArrowRight, CheckCircle, User, Briefcase, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 
-const benefits = [
-  '14-day free trial',
-  'No credit card required',
-  'AI-powered intake & drafting',
-  'Cancel anytime',
+const steps = [
+  { id: 1, title: 'Account', icon: User },
+  { id: 2, title: 'Professional', icon: Briefcase },
+  { id: 3, title: 'Verification', icon: Shield },
 ];
 
 export default function Signup() {
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const { signUp } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Step 1: Account Info
+  const [accountData, setAccountData] = useState({
+    fullName: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+  });
+
+  // Step 2: Professional Info
+  const [professionalData, setProfessionalData] = useState({
+    firmName: '',
+    barNumber: '',
+    phone: '',
+    practiceAreas: '',
+    yearsExperience: '',
+  });
+
+  // Step 3: Verification
+  const [verificationData, setVerificationData] = useState({
+    agreeToTerms: false,
+    agreeToPrivacy: false,
+  });
+
+  const validateStep1 = () => {
+    if (!accountData.fullName.trim()) {
+      toast.error('Please enter your full name');
+      return false;
+    }
+    if (!accountData.email.trim()) {
+      toast.error('Please enter your email');
+      return false;
+    }
+    if (accountData.password.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return false;
+    }
+    if (accountData.password !== accountData.confirmPassword) {
+      toast.error('Passwords do not match');
+      return false;
+    }
+    return true;
+  };
+
+  const validateStep2 = () => {
+    if (!professionalData.barNumber.trim()) {
+      toast.error('Bar number is required for verification');
+      return false;
+    }
+    return true;
+  };
+
+  const handleNext = () => {
+    if (currentStep === 1 && !validateStep1()) return;
+    if (currentStep === 2 && !validateStep2()) return;
+    setCurrentStep((prev) => Math.min(prev + 1, 3));
+  };
+
+  const handleBack = () => {
+    setCurrentStep((prev) => Math.max(prev - 1, 1));
+  };
+
+  const handleSubmit = async () => {
+    if (!verificationData.agreeToTerms || !verificationData.agreeToPrivacy) {
+      toast.error('Please agree to the terms and privacy policy');
+      return;
+    }
+
     setLoading(true);
 
-    const { error } = await signUp(email, password, fullName);
+    try {
+      // Create auth user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: accountData.email,
+        password: accountData.password,
+        options: {
+          emailRedirectTo: window.location.origin,
+          data: {
+            full_name: accountData.fullName,
+          },
+        },
+      });
 
-    if (error) {
-      toast.error(error.message);
-      setLoading(false);
-    } else {
-      toast.success('Account created! Welcome to LegalCopilot.');
+      if (authError) throw authError;
+
+      if (authData.user) {
+        // Create profile with professional details
+        const { error: profileError } = await supabase.from('profiles').insert({
+          user_id: authData.user.id,
+          email: accountData.email,
+          full_name: accountData.fullName,
+          firm_name: professionalData.firmName || null,
+          bar_number: professionalData.barNumber || null,
+          phone: professionalData.phone || null,
+        });
+
+        if (profileError) {
+          console.error('Profile creation error:', profileError);
+        }
+      }
+
+      toast.success('Account created! Welcome to LegalCase Pro.');
       navigate('/dashboard');
+    } catch (error: any) {
+      console.error('Signup error:', error);
+      toast.error(error.message || 'Failed to create account');
+    } finally {
+      setLoading(false);
     }
   };
+
+  const progress = (currentStep / 3) * 100;
 
   return (
     <div className="min-h-screen bg-muted/30 flex flex-col">
@@ -48,30 +142,8 @@ export default function Signup() {
         </Link>
       </header>
 
-      {/* Signup Form */}
       <div className="flex-1 flex items-center justify-center px-4 py-8">
-        <div className="w-full max-w-4xl grid md:grid-cols-2 gap-8 items-center">
-          {/* Benefits */}
-          <div className="hidden md:block">
-            <h2 className="font-display text-3xl font-bold text-primary mb-6">
-              Start Your Free Trial Today
-            </h2>
-            <p className="text-muted-foreground mb-8">
-              Join hundreds of law firms already transforming their practice with AI-powered case management.
-            </p>
-            <ul className="space-y-4">
-              {benefits.map((benefit, index) => (
-                <li key={index} className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-full gradient-gold flex items-center justify-center">
-                    <CheckCircle className="h-4 w-4 text-primary" />
-                  </div>
-                  <span className="text-foreground">{benefit}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Form Card */}
+        <div className="w-full max-w-lg">
           <Card className="shadow-legal-lg">
             <CardHeader className="text-center">
               <div className="flex justify-center mb-4">
@@ -80,56 +152,215 @@ export default function Signup() {
                 </div>
               </div>
               <CardTitle className="font-display text-2xl">Create Account</CardTitle>
-              <CardDescription>Start your 14-day free trial</CardDescription>
+              <CardDescription>Step {currentStep} of 3: {steps[currentStep - 1].title}</CardDescription>
+              
+              {/* Progress Bar */}
+              <Progress value={progress} className="mt-4" />
+              
+              {/* Step Indicators */}
+              <div className="flex justify-between mt-4">
+                {steps.map((step) => (
+                  <div
+                    key={step.id}
+                    className={`flex flex-col items-center gap-1 ${
+                      currentStep >= step.id ? 'text-secondary' : 'text-muted-foreground'
+                    }`}
+                  >
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        currentStep >= step.id ? 'bg-secondary text-secondary-foreground' : 'bg-muted'
+                      }`}
+                    >
+                      {currentStep > step.id ? (
+                        <CheckCircle className="h-5 w-5" />
+                      ) : (
+                        <step.icon className="h-4 w-4" />
+                      )}
+                    </div>
+                    <span className="text-xs">{step.title}</span>
+                  </div>
+                ))}
+              </div>
             </CardHeader>
+            
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="fullName">Full Name</Label>
-                  <Input
-                    id="fullName"
-                    type="text"
-                    placeholder="John Smith"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    required
-                  />
+              {/* Step 1: Account Info */}
+              {currentStep === 1 && (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName">Full Name *</Label>
+                    <Input
+                      id="fullName"
+                      placeholder="John Smith"
+                      value={accountData.fullName}
+                      onChange={(e) => setAccountData({ ...accountData, fullName: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email *</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="attorney@lawfirm.com"
+                      value={accountData.email}
+                      onChange={(e) => setAccountData({ ...accountData, email: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password *</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={accountData.password}
+                      onChange={(e) => setAccountData({ ...accountData, password: e.target.value })}
+                      required
+                      minLength={6}
+                    />
+                    <p className="text-xs text-muted-foreground">Minimum 6 characters</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">Confirm Password *</Label>
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      placeholder="••••••••"
+                      value={accountData.confirmPassword}
+                      onChange={(e) => setAccountData({ ...accountData, confirmPassword: e.target.value })}
+                      required
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="attorney@lawfirm.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
+              )}
+
+              {/* Step 2: Professional Info */}
+              {currentStep === 2 && (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="firmName">Law Firm Name</Label>
+                    <Input
+                      id="firmName"
+                      placeholder="Smith & Associates LLP"
+                      value={professionalData.firmName}
+                      onChange={(e) => setProfessionalData({ ...professionalData, firmName: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="barNumber">Bar Number *</Label>
+                    <Input
+                      id="barNumber"
+                      placeholder="123456"
+                      value={professionalData.barNumber}
+                      onChange={(e) => setProfessionalData({ ...professionalData, barNumber: e.target.value })}
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground">Required for attorney verification</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="(555) 123-4567"
+                      value={professionalData.phone}
+                      onChange={(e) => setProfessionalData({ ...professionalData, phone: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="practiceAreas">Practice Areas</Label>
+                    <Input
+                      id="practiceAreas"
+                      placeholder="Family Law, Personal Injury, Criminal Defense"
+                      value={professionalData.practiceAreas}
+                      onChange={(e) => setProfessionalData({ ...professionalData, practiceAreas: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="yearsExperience">Years of Experience</Label>
+                    <Input
+                      id="yearsExperience"
+                      type="number"
+                      min="0"
+                      placeholder="10"
+                      value={professionalData.yearsExperience}
+                      onChange={(e) => setProfessionalData({ ...professionalData, yearsExperience: e.target.value })}
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={6}
-                  />
-                  <p className="text-xs text-muted-foreground">Minimum 6 characters</p>
+              )}
+
+              {/* Step 3: Verification */}
+              {currentStep === 3 && (
+                <div className="space-y-6">
+                  <div className="p-4 bg-muted/50 rounded-lg space-y-3">
+                    <h4 className="font-medium">Account Summary</h4>
+                    <div className="text-sm space-y-1">
+                      <p><span className="text-muted-foreground">Name:</span> {accountData.fullName}</p>
+                      <p><span className="text-muted-foreground">Email:</span> {accountData.email}</p>
+                      <p><span className="text-muted-foreground">Firm:</span> {professionalData.firmName || 'Not specified'}</p>
+                      <p><span className="text-muted-foreground">Bar Number:</span> {professionalData.barNumber}</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={verificationData.agreeToTerms}
+                        onChange={(e) => setVerificationData({ ...verificationData, agreeToTerms: e.target.checked })}
+                        className="mt-1"
+                      />
+                      <span className="text-sm">
+                        I agree to the <a href="#" className="text-secondary hover:underline">Terms of Service</a> and understand that my bar number will be verified.
+                      </span>
+                    </label>
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={verificationData.agreeToPrivacy}
+                        onChange={(e) => setVerificationData({ ...verificationData, agreeToPrivacy: e.target.checked })}
+                        className="mt-1"
+                      />
+                      <span className="text-sm">
+                        I agree to the <a href="#" className="text-secondary hover:underline">Privacy Policy</a> and consent to the processing of my data.
+                      </span>
+                    </label>
+                  </div>
                 </div>
-                <Button 
-                  type="submit" 
-                  className="w-full gradient-gold text-primary font-semibold"
-                  disabled={loading}
-                >
-                  {loading ? 'Creating account...' : 'Start Free Trial'}
-                </Button>
-              </form>
-              <p className="mt-4 text-xs text-center text-muted-foreground">
-                By signing up, you agree to our Terms of Service and Privacy Policy.
-              </p>
+              )}
+
+              {/* Navigation Buttons */}
+              <div className="flex gap-3 mt-6">
+                {currentStep > 1 && (
+                  <Button type="button" variant="outline" onClick={handleBack} className="flex-1">
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back
+                  </Button>
+                )}
+                
+                {currentStep < 3 ? (
+                  <Button
+                    type="button"
+                    onClick={handleNext}
+                    className="flex-1 gradient-gold text-primary"
+                  >
+                    Next
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={loading || !verificationData.agreeToTerms || !verificationData.agreeToPrivacy}
+                    className="flex-1 gradient-gold text-primary"
+                  >
+                    {loading ? 'Creating Account...' : 'Create Account'}
+                  </Button>
+                )}
+              </div>
+
               <div className="mt-6 text-center text-sm">
                 <span className="text-muted-foreground">Already have an account? </span>
                 <Link to="/login" className="text-secondary hover:underline font-medium">
