@@ -245,6 +245,50 @@ export type Database = {
           },
         ]
       }
+      client_portal_access: {
+        Row: {
+          access_token: string
+          client_id: string
+          created_at: string
+          email: string
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          last_accessed_at: string | null
+          lawyer_user_id: string
+        }
+        Insert: {
+          access_token: string
+          client_id: string
+          created_at?: string
+          email: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_accessed_at?: string | null
+          lawyer_user_id: string
+        }
+        Update: {
+          access_token?: string
+          client_id?: string
+          created_at?: string
+          email?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_accessed_at?: string | null
+          lawyer_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_access_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           address: string | null
@@ -281,6 +325,45 @@ export type Database = {
           phone?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      custom_templates: {
+        Row: {
+          content: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          template_type: string
+          updated_at: string
+          user_id: string
+          variables: Json | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          template_type: string
+          updated_at?: string
+          user_id: string
+          variables?: Json | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          template_type?: string
+          updated_at?: string
+          user_id?: string
+          variables?: Json | null
         }
         Relationships: []
       }
@@ -373,9 +456,12 @@ export type Database = {
           full_name: string | null
           id: string
           phone: string | null
+          practice_areas: string | null
           subscription_tier: string | null
+          trial_ends_at: string | null
           updated_at: string
           user_id: string
+          years_experience: number | null
         }
         Insert: {
           bar_number?: string | null
@@ -385,9 +471,12 @@ export type Database = {
           full_name?: string | null
           id?: string
           phone?: string | null
+          practice_areas?: string | null
           subscription_tier?: string | null
+          trial_ends_at?: string | null
           updated_at?: string
           user_id: string
+          years_experience?: number | null
         }
         Update: {
           bar_number?: string | null
@@ -397,9 +486,45 @@ export type Database = {
           full_name?: string | null
           id?: string
           phone?: string | null
+          practice_areas?: string | null
           subscription_tier?: string | null
+          trial_ends_at?: string | null
           updated_at?: string
           user_id?: string
+          years_experience?: number | null
+        }
+        Relationships: []
+      }
+      team_members: {
+        Row: {
+          created_at: string
+          id: string
+          invited_email: string | null
+          member_user_id: string
+          role: string
+          status: string
+          team_owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invited_email?: string | null
+          member_user_id: string
+          role?: string
+          status?: string
+          team_owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invited_email?: string | null
+          member_user_id?: string
+          role?: string
+          status?: string
+          team_owner_id?: string
+          updated_at?: string
         }
         Relationships: []
       }

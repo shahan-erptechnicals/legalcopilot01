@@ -90,7 +90,6 @@ const pricingPlans = [
       'Everything in Professional',
       'Multi-user access',
       'Custom templates',
-      'API access',
       'Dedicated account manager',
     ],
     popular: false,

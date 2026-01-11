@@ -1,21 +1,45 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Scale, ArrowLeft, ArrowRight, CheckCircle, User, Briefcase, Shield } from 'lucide-react';
+import { Scale, ArrowLeft, ArrowRight, CheckCircle, User, Briefcase, Shield, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 
 const steps = [
   { id: 1, title: 'Account', icon: User },
   { id: 2, title: 'Professional', icon: Briefcase },
-  { id: 3, title: 'Verification', icon: Shield },
+  { id: 3, title: 'Plan', icon: CreditCard },
+  { id: 4, title: 'Verification', icon: Shield },
+];
+
+const plans = [
+  {
+    id: 'solo',
+    name: 'Solo',
+    price: '$79',
+    features: ['Up to 25 active cases', 'AI intake chat', 'Case summaries', 'Basic document drafting'],
+  },
+  {
+    id: 'professional',
+    name: 'Professional',
+    price: '$149',
+    features: ['Up to 100 active cases', 'Advanced AI drafting', 'Priority reminders', 'Client portal access'],
+    popular: true,
+  },
+  {
+    id: 'firm',
+    name: 'Firm',
+    price: '$199',
+    features: ['Unlimited cases', 'Multi-user access', 'Custom templates', 'Dedicated account manager'],
+  },
 ];
 
 export default function Signup() {
+  const [searchParams] = useSearchParams();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -37,7 +61,10 @@ export default function Signup() {
     yearsExperience: '',
   });
 
-  // Step 3: Verification
+  // Step 3: Plan Selection
+  const [selectedPlan, setSelectedPlan] = useState(searchParams.get('plan') || 'solo');
+
+  // Step 4: Verification
   const [verificationData, setVerificationData] = useState({
     agreeToTerms: false,
     agreeToPrivacy: false,
@@ -74,7 +101,7 @@ export default function Signup() {
   const handleNext = () => {
     if (currentStep === 1 && !validateStep1()) return;
     if (currentStep === 2 && !validateStep2()) return;
-    setCurrentStep((prev) => Math.min(prev + 1, 3));
+    setCurrentStep((prev) => Math.min(prev + 1, 4));
   };
 
   const handleBack = () => {
@@ -90,7 +117,6 @@ export default function Signup() {
     setLoading(true);
 
     try {
-      // Create auth user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: accountData.email,
         password: accountData.password,
@@ -105,7 +131,6 @@ export default function Signup() {
       if (authError) throw authError;
 
       if (authData.user) {
-        // Create profile with professional details
         const { error: profileError } = await supabase.from('profiles').insert({
           user_id: authData.user.id,
           email: accountData.email,
@@ -113,6 +138,9 @@ export default function Signup() {
           firm_name: professionalData.firmName || null,
           bar_number: professionalData.barNumber || null,
           phone: professionalData.phone || null,
+          subscription_tier: selectedPlan,
+          practice_areas: professionalData.practiceAreas || null,
+          years_experience: professionalData.yearsExperience ? parseInt(professionalData.yearsExperience) : null,
         });
 
         if (profileError) {
@@ -130,7 +158,7 @@ export default function Signup() {
     }
   };
 
-  const progress = (currentStep / 3) * 100;
+  const progress = (currentStep / 4) * 100;
 
   return (
     <div className="min-h-screen bg-muted/30 flex flex-col">
@@ -152,7 +180,7 @@ export default function Signup() {
                 </div>
               </div>
               <CardTitle className="font-display text-2xl">Create Account</CardTitle>
-              <CardDescription>Step {currentStep} of 3: {steps[currentStep - 1].title}</CardDescription>
+              <CardDescription>Step {currentStep} of 4: {steps[currentStep - 1].title}</CardDescription>
               
               {/* Progress Bar */}
               <Progress value={progress} className="mt-4" />
@@ -291,8 +319,46 @@ export default function Signup() {
                 </div>
               )}
 
-              {/* Step 3: Verification */}
+              {/* Step 3: Plan Selection */}
               {currentStep === 3 && (
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">All plans include a 14-day free trial.</p>
+                  <div className="space-y-3">
+                    {plans.map((plan) => (
+                      <div
+                        key={plan.id}
+                        onClick={() => setSelectedPlan(plan.id)}
+                        className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                          selectedPlan === plan.id
+                            ? 'border-secondary bg-secondary/5'
+                            : 'border-border hover:border-secondary/50'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-semibold">{plan.name}</h4>
+                            {plan.popular && (
+                              <span className="text-xs bg-secondary text-secondary-foreground px-2 py-0.5 rounded">Popular</span>
+                            )}
+                          </div>
+                          <span className="font-display text-xl font-bold">{plan.price}<span className="text-sm font-normal text-muted-foreground">/mo</span></span>
+                        </div>
+                        <ul className="text-sm text-muted-foreground space-y-1">
+                          {plan.features.map((feature, i) => (
+                            <li key={i} className="flex items-center gap-2">
+                              <CheckCircle className="h-3 w-3 text-secondary" />
+                              {feature}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Step 4: Verification */}
+              {currentStep === 4 && (
                 <div className="space-y-6">
                   <div className="p-4 bg-muted/50 rounded-lg space-y-3">
                     <h4 className="font-medium">Account Summary</h4>
@@ -301,6 +367,7 @@ export default function Signup() {
                       <p><span className="text-muted-foreground">Email:</span> {accountData.email}</p>
                       <p><span className="text-muted-foreground">Firm:</span> {professionalData.firmName || 'Not specified'}</p>
                       <p><span className="text-muted-foreground">Bar Number:</span> {professionalData.barNumber}</p>
+                      <p><span className="text-muted-foreground">Plan:</span> {plans.find(p => p.id === selectedPlan)?.name} ({plans.find(p => p.id === selectedPlan)?.price}/mo)</p>
                     </div>
                   </div>
 
@@ -340,7 +407,7 @@ export default function Signup() {
                   </Button>
                 )}
                 
-                {currentStep < 3 ? (
+                {currentStep < 4 ? (
                   <Button
                     type="button"
                     onClick={handleNext}
@@ -356,7 +423,7 @@ export default function Signup() {
                     disabled={loading || !verificationData.agreeToTerms || !verificationData.agreeToPrivacy}
                     className="flex-1 gradient-gold text-primary"
                   >
-                    {loading ? 'Creating Account...' : 'Create Account'}
+                    {loading ? 'Creating Account...' : 'Start Free Trial'}
                   </Button>
                 )}
               </div>
