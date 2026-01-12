@@ -80,7 +80,15 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
 
       if (profile) {
-        setTier((profile.subscription_tier as SubscriptionTier) || 'solo');
+        const dbTier = (profile.subscription_tier || 'solo').toLowerCase();
+        if (dbTier === 'professional') {
+          setTier('professional');
+        } else if (dbTier === 'firm') {
+          setTier('firm');
+        } else {
+          setTier('solo');
+        }
+        
         if (profile.trial_ends_at) {
           setTrialEndsAt(new Date(profile.trial_ends_at));
         }
@@ -114,7 +122,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const limits = tierLimits[tier];
+  const limits = tierLimits[tier] || tierLimits['solo'];
   const canCreateCase = currentCaseCount < limits.maxCases;
   const isInTrial = trialEndsAt ? new Date() < trialEndsAt : false;
 

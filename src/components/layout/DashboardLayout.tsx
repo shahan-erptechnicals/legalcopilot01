@@ -1,6 +1,7 @@
 import { ReactNode, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -23,6 +24,8 @@ import {
   Menu,
   X,
   ChevronRight,
+  UserPlus,
+  FileStack,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -30,20 +33,28 @@ interface DashboardLayoutProps {
   children: ReactNode;
 }
 
-const navItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-  { icon: MessageSquare, label: 'Intake Chat', path: '/dashboard/intake' },
-  { icon: Briefcase, label: 'Cases', path: '/dashboard/cases' },
-  { icon: Users, label: 'Clients', path: '/dashboard/clients' },
-  { icon: FileText, label: 'Documents', path: '/dashboard/documents' },
-  { icon: Calendar, label: 'Calendar', path: '/dashboard/calendar' },
-];
-
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, signOut } = useAuth();
+  const { tier } = useSubscription();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const baseNavItems = [
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+    { icon: MessageSquare, label: 'Intake Chat', path: '/dashboard/intake' },
+    { icon: Briefcase, label: 'Cases', path: '/dashboard/cases' },
+    { icon: Users, label: 'Clients', path: '/dashboard/clients' },
+    { icon: FileText, label: 'Documents', path: '/dashboard/documents' },
+    { icon: Calendar, label: 'Calendar', path: '/dashboard/calendar' },
+  ];
+
+  const firmNavItems = tier === 'firm' ? [
+    { icon: UserPlus, label: 'Team Management', path: '/dashboard/team' },
+    { icon: FileStack, label: 'Custom Templates', path: '/dashboard/templates' },
+  ] : [];
+
+  const navItems = [...baseNavItems, ...firmNavItems];
 
   const handleSignOut = async () => {
     await signOut();
